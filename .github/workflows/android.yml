@@ -22,8 +22,28 @@ jobs:
           gradle-version: '8.9'
 
       - name: Extract project
+        run: unzip -q BeliyPOS_DEMO_GitHub_Build.zip -d extracted
+
+      - name: Fix Java and Kotlin versions
         run: |
-          unzip -q BeliyPOS_DEMO_GitHub_Build.zip -d extracted
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("extracted/BeliyPOS_DEMO/app/build.gradle.kts")
+          s = p.read_text()
+          marker = "    buildFeatures {"
+          fix = """    compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+
+          """
+          if marker not in s:
+              raise SystemExit("Не найден блок buildFeatures")
+          p.write_text(s.replace(marker, fix + marker, 1))
+          PY
 
       - name: Build APK
         run: |
@@ -34,4 +54,4 @@ jobs:
         with:
           name: BeliyPOS-DEMO-APK
           path: extracted/BeliyPOS_DEMO/app/build/outputs/apk/debug/app-debug.apk
-          
+
